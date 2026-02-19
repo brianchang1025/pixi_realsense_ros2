@@ -1,0 +1,77 @@
+[workspace]
+authors = ["Daniel San José Pro <42489408+danielsanjosepro@users.noreply.github.com>"]
+channels = ["conda-forge"]
+name = "pixi_realsense_jazzy"
+platforms = ["linux-64"]
+version = "1.2.0"
+
+[dependencies]
+python = "*"
+cmake = "*"
+compilers = "*"
+poco = "*"
+libpsl = "*"
+lttng-ust = "*"
+pkg-config = "*"
+libusb = "*"
+ninja = "*"
+
+[target.linux.dependencies]
+libgl-devel = "*"
+
+[environments]
+jazzy = { features = ["jazzy"] }
+
+[feature.jazzy]
+channels = ["https://prefix.dev/robostack-jazzy"]
+
+[feature.jazzy.dependencies]
+colcon-common-extensions = "*"
+
+# Core ROS 2 Jazzy Base
+ros-jazzy-desktop = "*"
+
+# RealSense Build Requirements (Jazzy versions)
+ros-jazzy-xacro = "*"
+ros-jazzy-diagnostic-updater = "*"
+ros-jazzy-image-transport = "*"
+ros-jazzy-image-transport-plugins = "*"
+ros-jazzy-compressed-image-transport = "*"
+ros-jazzy-cv-bridge = "*"
+ros-jazzy-sensor-msgs = "*"
+rosdep = "*"
+
+[feature.jazzy.activation]
+scripts = ["install/setup.bash"]
+
+[feature.jazzy.tasks]
+# 1. Clone the SDK and the ROS Wrapper
+clone-all = """
+mkdir -p src && 
+(test -d src/librealsense || git clone https://github.com/realsenseai/librealsense.git src/librealsense) &&
+(test -d src/realsense-ros || git clone https://github.com/realsenseai/realsense-ros.git -b ros2-development src/realsense-ros)
+"""
+
+# 2. Build the SDK from source (using RSUSB)
+build-sdk = { cmd = """
+cmake -S src/librealsense -B src/librealsense/build \
+      -DFORCE_RSUSB_BACKEND=ON \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_GRAPHICAL_EXAMPLES=OFF \
+      -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX && \
+cmake --build src/librealsense/build -j$(nproc) && \
+cmake --install src/librealsense/build
+""", depends-on = ["clone-all"] }
+
+# 3. Build the ROS Wrapper (linking to the SDK we just built)
+build-ros = { cmd = """
+colcon build --symlink-install \
+    --cmake-args \
+    -DCMAKE_BUILD_TYPE=Release \
+    -Drealsense2_DIR=$CONDA_PREFIX/lib/cmake/realsense2 \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+""", depends-on = ["build-sdk"] }
+
+# Shortcut for everything
+setup = { depends-on = ["build-ros"] }
