@@ -1,7 +1,7 @@
 [workspace]
 authors = ["Daniel San José Pro <42489408+danielsanjosepro@users.noreply.github.com>"]
-channels = ["conda-forge"]
-name = "pixi_realsense_jazzy"
+channels = ["https://fast.prefix.dev/conda-forge"]
+name = "pixi_realsense_ros2"
 platforms = ["linux-64"]
 version = "1.2.0"
 
@@ -15,6 +15,7 @@ lttng-ust = "*"
 pkg-config = "*"
 libusb = "*"
 ninja = "*"
+opencv = "*"
 
 [target.linux.dependencies]
 libgl-devel = "*"
@@ -42,7 +43,10 @@ ros-jazzy-sensor-msgs = "*"
 rosdep = "*"
 
 [feature.jazzy.activation]
-scripts = ["install/setup.bash"]
+scripts = [
+    "scripts/set_ros_env.sh",
+    "install/setup.bash"
+]
 
 [feature.jazzy.tasks]
 # 1. Clone the SDK and the ROS Wrapper
