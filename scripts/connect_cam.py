@@ -3,16 +3,19 @@ import sys
 import tempfile
 import time
 import rclpy
+import subprocess
 from threading import Thread
 from rclpy.executors import MultiThreadedExecutor
 from utils.camera import Camera
-from utils.utils import COLORS, launch_in_terminal, kill_all, read_single_key, prompt_default
+from utils.utils import COLORS, launch_in_terminal, kill_all, read_single_key, prompt_default, make_payload
 
 
 # Configuration
 TMPDIR = os.environ.get("TMPDIR") or tempfile.mkdtemp(prefix="panda_connect.")
 TOPICS_TO_SUB = {
-
+    "color/image_raw": "sensor_msgs/msg/Image",
+    "color/image_raw/compressed": "sensor_msgs/msg/CompressedImage",
+    "color/camera_info": "sensor_msgs/msg/CameraInfo",
 
 }
 TOPICS_TO_PUB = {
@@ -39,10 +42,22 @@ def main():
     third_person.launch(launch_in_terminal)
     time.sleep(1.5)
 
+    wrist.is_connected = False
+    third_person.is_connected = False
+    while not wrist.is_connected or not third_person.is_connected:
+        if not wrist.is_connected:
+            print(f"Waiting for {ca_ns1} [serial: {serial_num1}] to connect...")
+            wrist.is_connected = wrist._wait_for_network()
+        if not third_person.is_connected:
+            print(f"Waiting for {ca_ns2} [serial: {serial_num2}] to connect...")
+            third_person.is_connected = third_person._wait_for_network()
+        time.sleep(2)
     # 4. Health Dashboard (Now inside the class!)
     wrist.run_health_dashboard(TOPICS_TO_SUB, TOPICS_TO_PUB)
-    #third_person.run_health_dashboard(TOPICS_TO_SUB, TOPICS_TO_PUB)
-
+    third_person.run_health_dashboard(TOPICS_TO_SUB, TOPICS_TO_PUB)
+    
+    cmd = "pixi run -e jazzy rqt --perspective-file ./scripts/cameraviewer.perspective"
+    launch_in_terminal("Camera Dashboard", cmd, os.path.join(TMPDIR, "rqt.log"))
     # 5. Persistent Control
     print(f"\n🚀 {COLORS['G']}Cameras Ready.{COLORS['RE']}")
     print(f"Press {COLORS['B']}'q'{COLORS['RE']} to terminate all processes and exit.")

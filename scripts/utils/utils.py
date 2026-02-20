@@ -26,7 +26,7 @@ def make_payload(cmd: str, log: str) -> str:
         "while true; do read -n1 -s key; [[ \"$key\" == q ]] && break; done"
     )
 
-def launch_in_terminal(title: str, cmd: str, log: str) -> Optional[subprocess.Popen]:
+def launch_in_terminal(title: str, cmd: str, log: str=None) -> Optional[subprocess.Popen]:
     """Spawns the given command in a new GUI terminal or tmux window."""
     payload = make_payload(cmd, log)
     

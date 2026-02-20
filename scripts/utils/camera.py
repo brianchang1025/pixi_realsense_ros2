@@ -39,12 +39,12 @@ class Camera:
         
         # Check Robot Subscriptions (Echo)
         for t_name in topics_sub:
-            if not self._verify_topic(f"{self.ns}/{t_name}", mode="echo"):
+            if not self._verify_topic(f"camera/{self.ns}/{t_name}", mode="echo"):
                 all_good = False
         print(f"--- {COLORS['B']}{self.ns} Topic Publication Test{COLORS['RE']} ---")
         # Check Robot Publishers (Pub)
         for t_name, m_type in topics_pub.items():
-            if not self._verify_topic(f"{self.ns}/{t_name}", mode="pub", msg_type=m_type):
+            if not self._verify_topic(f"camera/{self.ns}/{t_name}", mode="pub", msg_type=m_type):
                 all_good = False
 
         return all_good
@@ -61,16 +61,18 @@ class Camera:
         print(f"{status}: /{full_topic}")
         return success
 
-    # def _wait_for_network(self, timeout=12):
-    #     start = time.time()
-    #     while (time.time() - start) < timeout:
-    #         try:
-    #             output = subprocess.check_output("pixi run -e jazzy ros2 topic list", shell=True).decode()
-    #             if f"/{self.ns}/franka_robot_state" in output:
-    #                 return True
-    #         except: pass
-    #         time.sleep(1)
-    #     return False
+    def _wait_for_network(self, timeout=12):
+        start = time.time()
+        while (time.time() - start) < timeout:
+            try:
+                output = subprocess.check_output("pixi run -e jazzy ros2 topic list", shell=True).decode()
+                if f"/camera/{self.ns}/color/camera_info" in output:
+                    print(f"{COLORS['G']}Launched {self.ns} [serial: {self.serial_num}].{COLORS['RE']}")
+                    return True
+            except: pass
+            time.sleep(1)
+        print(f"{COLORS['R']}Failed to detect {self.ns} [serial: {self.serial_num}].{COLORS['RE']} {COLORS['B']}Unplug the camera and try again.{COLORS['RE']}")
+        return False
 
     def cleanup(self):
         """Kills existing processes for this specific arm namespace."""
